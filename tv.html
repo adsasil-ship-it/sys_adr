@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Adriano Designer Pro - Painel TV</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background: #0a0b0e; color: #fff; padding: 30px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f2128; padding-bottom: 20px; margin-bottom: 30px; }
+    
+    .brand-group { display: flex; align-items: center; gap: 16px; }
+    .brand-img { width: 70px; height: 70px; object-fit: contain; filter: invert(1) brightness(2); }
+    
+    .logo-text { font-size: 2rem; font-weight: bold; color: #ffffff; letter-spacing: 1px; }
+    .clock { font-size: 2.5rem; font-family: monospace; font-weight: bold; color: #00b37e; }
+
+    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; flex: 1; }
+    .box { background: #14151a; border: 1px solid #282930; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; }
+    .box-title { font-size: 1.4rem; color: #8d8d99; text-transform: uppercase; margin-bottom: 20px; font-weight: bold; }
+
+    .featured-card { background: #1a2f26; border: 3px solid #00b37e; border-radius: 12px; padding: 30px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.3s; }
+    .featured-card.paused { background: #332600; border-color: #ffb800; }
+    
+    .status-tag { display: inline-block; padding: 6px 16px; border-radius: 6px; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; }
+    .status-running { background: rgba(0,179,126,0.3); color: #00b37e; border: 1px solid #00b37e; }
+    .status-paused { background: rgba(255,184,0,0.3); color: #ffb800; border: 1px solid #ffb800; }
+
+    .featured-card h1 { font-size: 3.5rem; color: #fff; margin-bottom: 10px; }
+    .featured-card p { font-size: 1.8rem; color: #00b37e; font-weight: bold; }
+    
+    .tv-timer { font-family: monospace; font-size: 3.5rem; font-weight: bold; color: #00b37e; background: #0d0e12; padding: 10px 30px; border-radius: 10px; border: 2px solid #00b37e; margin-top: 15px; }
+    .tv-timer.paused { color: #ffb800; border-color: #ffb800; }
+
+    .queue-list { list-style: none; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+    .queue-item { background: #1f2128; border-radius: 10px; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 1.8rem; }
+    .queue-item .pos { background: #00b37e; color: #121214; font-weight: bold; padding: 5px 15px; border-radius: 8px; font-size: 1.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-group">
+      <img src="logo.svg" alt="Adriano Designer Pro" class="brand-img">
+      <div class="logo-text">ADRIANO DESIGNER PRO</div>
+    </div>
+    <div class="clock" id="tv-clock">00:00:00</div>
+  </header>
+
+  <div class="grid">
+    <div class="box">
+      <div class="box-title">🔔 Em Atendimento Agora</div>
+      <div class="featured-card" id="tv-card">
+        <div id="tv-status-tag" class="status-tag status-running">EM ATENDIMENTO</div>
+        <h1 id="tv-active-name">Aguardando...</h1>
+        <p id="tv-active-type">---</p>
+        <div class="tv-timer" id="tv-timer-display">00:00:00</div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="box-title">👥 Próximos da Fila</div>
+      <ul class="queue-list" id="tv-queue"></ul>
+    </div>
+  </div>
+
+  <script>
+    let db = null;
+
+    function updateClock() {
+      document.getElementById('tv-clock').innerText = new Date().toLocaleTimeString('pt-BR');
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    async function updateTVData() {
+      const savedDb = localStorage.getItem('adriano_db_sqlite');
+      if (!savedDb) return;
+
+      const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` });
+      const uInt8Array = new Uint8Array(JSON.parse(savedDb));
+      db = new SQL.Database(uInt8Array);
+
+      const res = db.exec("SELECT * FROM customers WHERE status = 'EM_ANDAMENTO'");
+      let active = null;
+      if (res.length > 0) {
+        const row = res[0].values[0];
+        const cols = res[0].columns;
+        active = {};
+        cols.forEach((c, i) => active[c] = row[i]);
+      }
+
+      const card = document.getElementById('tv-card');
+      const statusTag = document.getElementById('tv-status-tag');
+      const timerDisplay = document.getElementById('tv-timer-display');
+
+      if (active) {
+        document.getElementById('tv-active-name').innerText = active.name;
+        document.getElementById('tv-active-type').innerText = active.type;
+
+        const secs = active.elapsedTime || 0;
+        const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+        const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+        const s = String(secs % 60).padStart(2, '0');
+        timerDisplay.innerText = `${h}:${m}:${s}`;
+
+        if (active.timerRunning) {
+          card.classList.remove('paused');
+          timerDisplay.classList.remove('paused');
+          statusTag.className = 'status-tag status-running';
+          statusTag.innerText = 'EM ATENDIMENTO INICIADO';
+        } else if (secs > 0) {
+          card.classList.add('paused');
+          timerDisplay.classList.add('paused');
+          statusTag.className = 'status-tag status-paused';
+          statusTag.innerText = 'ATENDIMENTO PAUSADO';
+        } else {
+          card.classList.remove('paused');
+          timerDisplay.classList.remove('paused');
+          statusTag.className = 'status-tag status-running';
+          statusTag.innerText = 'AGUARDANDO INÍCIO DO ATENDIMENTO';
+        }
+      } else {
+        document.getElementById('tv-active-name').innerText = "Livre";
+        document.getElementById('tv-active-type').innerText = "Próximo cliente pode se aproximar";
+        timerDisplay.innerText = "00:00:00";
+        statusTag.className = 'status-tag status-running';
+        statusTag.innerText = 'SEM ATENDIMENTO';
+      }
+
+      const queueRes = db.exec("SELECT * FROM customers WHERE status = 'AGENDADO'");
+      const queueList = document.getElementById('tv-queue');
+
+      if (queueRes.length === 0 || queueRes[0].values.length === 0) {
+        queueList.innerHTML = `<li class="queue-item" style="color:#8d8d99;">Ninguém na fila de espera.</li>`;
+      } else {
+        const cols = queueRes[0].columns;
+        const queue = queueRes[0].values.map(row => {
+          let o = {};
+          cols.forEach((c, i) => o[c] = row[i]);
+          return o;
+        });
+
+        queueList.innerHTML = queue.map((c, idx) => `
+          <li class="queue-item">
+            <span>${c.name} <small style="font-size:1.2rem; color:#8d8d99;">(${c.type})</small></span>
+            <span class="pos">#${idx + 1}</span>
+          </li>
+        `).join('');
+      }
+    }
+
+    const bc = new BroadcastChannel('tv_channel');
+    bc.onmessage = () => updateTVData();
+    window.addEventListener('storage', () => updateTVData());
+    setInterval(updateTVData, 1000);
+    updateTVData();
+  </script>
+</body>
+</html>

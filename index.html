@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adriano Designer Pro - CRM & Gestão Gráfica</title>
+  <!-- Chart.js para os gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SQL.js para Banco de Dados Relacional SQLite no Navegador -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0d0e12; color: #e1e1e6; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* MODO BLOQUEADO (TELA DE LOGIN OBRIGATÓRIA) */
+    .system-locked .header, 
+    .system-locked .nav-tabs, 
+    .system-locked .main-container { display: none !important; }
+
+    .header { background: #18191e; border-bottom: 1px solid #282930; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .brand-img { width: 55px; height: 55px; object-fit: contain; filter: invert(1) brightness(2); }
+    .clock-time { font-size: 1.2rem; font-weight: bold; color: #00b37e; font-family: monospace; }
+
+    .nav-tabs { background: #121318; border-bottom: 1px solid #282930; padding: 0 24px; display: flex; gap: 10px; overflow-x: auto; }
+    .tab-btn { background: none; border: none; color: #8d8d99; padding: 14px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab-btn.active { color: #00b37e; border-bottom-color: #00b37e; }
+
+    .main-container { padding: 24px; flex: 1; max-width: 1600px; width: 100%; margin: 0 auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: #18191e; border: 1px solid #282930; border-radius: 8px; padding: 16px; }
+    .kpi-title { font-size: 0.75rem; text-transform: uppercase; color: #8d8d99; font-weight: 600; margin-bottom: 8px; }
+    .kpi-value { font-size: 1.4rem; font-weight: 700; }
+    .kpi-value.green { color: #00b37e; }
+    .kpi-value.red { color: #f75a68; }
+    .kpi-value.yellow { color: #ffb800; }
+    .kpi-value.blue { color: #61dafb; }
+    .kpi-value.purple { color: #9b51e0; }
+
+    .alert-banner { background: #2a1517; border: 1px solid #f75a68; border-left: 5px solid #f75a68; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #ff858d; display: none; }
+
+    .featured-banner { background: #18191e; border: 1px solid #282930; border-left: 4px solid #00b37e; border-radius: 8px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .timer-display { background: #121318; border: 1px solid #00b37e; color: #00b37e; padding: 8px 16px; border-radius: 6px; font-family: monospace; font-size: 1.5rem; font-weight: bold; }
+    .timer-paused { border-color: #ffb800 !important; color: #ffb800 !important; }
+
+    .btn { padding: 8px 14px; border-radius: 6px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: #00b37e; color: #121214; }
+    .btn-secondary { background: #282930; color: #e1e1e6; }
+    .btn-warning { background: #ffb800; color: #121214; }
+    .btn-danger { background: #f75a68; color: #fff; }
+    .btn-info { background: #61dafb; color: #121214; }
+
+    .kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .kanban-col { background: #18191e; border: 1px solid #282930; border-radius: 8px; padding: 16px; min-height: 400px; }
+    .kanban-card { background: #202128; border: 1px solid #282930; border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+
+    .filter-bar { background: #18191e; border: 1px solid #282930; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .filter-bar input, .filter-bar select { background: #121318; border: 1px solid #282930; color: #fff; padding: 8px; border-radius: 6px; font-size: 0.85rem; }
+
+    .card-panel { background: #18191e; border: 1px solid #282930; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .custom-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .custom-table th, .custom-table td { padding: 10px 12px; border-bottom: 1px solid #282930; font-size: 0.85rem; }
+    .custom-table th { color: #8d8d99; background: #121318; }
+
+    .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-box { background: #18191e; border: 1px solid #282930; border-radius: 8px; width: 90%; max-width: 520px; padding: 24px; max-height: 90vh; overflow-y: auto; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.8rem; color: #8d8d99; margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; background: #121318; border: 1px solid #282930; color: #e1e1e6; border-radius: 6px; }
+
+    .whatsapp-preview-box { background: #0c1814; border: 1px solid #00b37e; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; color: #e1e1e6; margin-bottom: 15px; }
+    .calc-box { background: #121318; border: 1px solid #282930; border-radius: 6px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-around; font-size: 0.9rem; }
+
+    .user-badge { background: #282930; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #00b37e; border: 1px solid #00b37e; }
+    
+    .visitor-mode .action-btn { display: none !important; }
+  </style>
+</head>
+<body id="app-body" class="system-locked">
+
+  <header class="header">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <img src="logo.svg" alt="Adriano Designer Pro" class="brand-img">
+      <div>
+        <h1 style="font-size:1.15rem; color:#fff; font-weight:700; letter-spacing:0.5px;">Adriano Designer Pro</h1>
+        <p style="font-size:0.75rem; color:#8d8d99;">Sistema Integrado de Atendimento & Gestão Gráfica</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span class="user-badge" id="current-user-display">👑 Usuário Master</span>
+      <button class="btn btn-primary action-btn" onclick="exportToExcel()">📥 Exportar XLS</button>
+      <button class="btn btn-info action-btn" onclick="triggerImport()">📤 Importar Backup (XLS)</button>
+      <input type="file" id="import-file-input" accept=".csv" style="display:none;" onchange="importBackupFile(event)">
+      <button class="btn btn-warning action-btn" onclick="openQuickExpenseModal()">⚡ Saída Rápida</button>
+      <button class="btn btn-secondary" onclick="openTVWindow()">📺 Tela TV</button>
+      <button class="btn btn-secondary action-btn" onclick="togglePrivacy()"><span id="eye-text">Ocultar Valores</span></button>
+      <button class="btn btn-danger" onclick="logoutSystem()">🔒 Sair / Trocar Usuário</button>
+      <div class="clock-time" id="clock-time">00:00:00</div>
+    </div>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-atendimento', this)">📌 Atendimento & Fila</button>
+    <button class="tab-btn" onclick="switchTab('tab-clientes', this)">👥 Clientes Cadastrados</button>
+    <button class="tab-btn" onclick="switchTab('tab-contas', this)">📅 Contas Pagar / Receber</button>
+    <button class="tab-btn" onclick="switchTab('tab-historico', this)">📊 Extrato Financeiro</button>
+    <button class="tab-btn" onclick="switchTab('tab-produtos-gastos', this)">📦 Gastos com Produtos</button>
+    <button class="tab-btn" onclick="switchTab('tab-graficos', this)">📈 Gráficos & Relatórios</button>
+    <button class="tab-btn" onclick="switchTab('tab-catalogo', this)">🏷️ Catálogo de Preços</button>
+    <button class="tab-btn action-btn" onclick="switchTab('tab-usuarios', this)">👤 Cadastrar Usuários</button>
+  </nav>
+
+  <main class="main-container">
+
+    <div class="alert-banner" id="today-bills-alert">
+      ⚠️ <strong>Atenção:</strong> Você possui dívidas/contas a pagar com vencimento para HOJE! Confira na aba Contas a Pagar.
+    </div>
+
+    <!-- KPIS SUPERIORES -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Entradas (Hoje)</div>
+        <div class="kpi-value green money-text" id="kpi-entradas">R$ 0,00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Saídas (Hoje)</div>
+        <div class="kpi-value red money-text" id="kpi-saidas">R$ 0,00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Saldo Líquido de Hoje</div>
+        <div class="kpi-value green money-text" id="kpi-saldo-hoje">R$ 0,00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Saldo Total Geral</div>
+        <div class="kpi-value purple money-text" id="kpi-saldo">R$ 0,00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">A Pagar (Pendente)</div>
+        <div class="kpi-value yellow money-text" id="kpi-apagar">R$ 0,00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">A Receber (Pendente)</div>
+        <div class="kpi-value blue money-text" id="kpi-areceber">R$ 0,00</div>
+      </div>
+    </section>
+
+    <!-- TAB 1: ATENDIMENTO -->
+    <div id="tab-atendimento" class="tab-content active">
+      <div class="featured-banner">
+        <div>
+          <span id="active-badge" style="background:rgba(0,179,126,0.2); color:#00b37e; font-size:0.75rem; padding:4px; font-weight:bold; border-radius:4px;">EM ATENDIMENTO</span>
+          <h2 id="featured-name" style="margin-top:5px;">Livre</h2>
+          <p id="featured-desc" style="color:#8d8d99; font-size:0.85rem;">Nenhum cliente ativo no momento</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div class="timer-display" id="active-timer">00:00:00</div>
+          
+          <div id="timer-controls" class="action-btn">
+            <button class="btn btn-primary" id="btn-start-timer" onclick="startAttendanceTimer()">▶️ Iniciar Atendimento</button>
+            <button class="btn btn-warning" id="btn-pause-timer" onclick="pauseAttendanceTimer()" style="display:none;">⏸️ Pausar</button>
+          </div>
+
+          <button class="btn btn-secondary action-btn" onclick="copyNextInQueueMsg()">📋 Copiar Msg Fila</button>
+          <button class="btn btn-warning action-btn" onclick="moveToWaitingReturn()">⏩ Mudar p/ Esperando Retorno</button>
+          <button class="btn btn-info action-btn" onclick="openProposalModal()">📝 Montar Proposta / Finalizar</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <button class="btn btn-primary action-btn" onclick="openAddQueueModal()">+ Adicionar Cliente na Fila</button>
+      </div>
+
+      <div class="kanban-board">
+        <div class="kanban-col">
+          <h3>AGENDADO (FILA)</h3>
+          <div id="col-agendado" style="margin-top:12px;"></div>
+        </div>
+        <div class="kanban-col">
+          <h3>ESPERANDO RETORNO</h3>
+          <div id="col-retorno" style="margin-top:12px;"></div>
+        </div>
+        <div class="kanban-col">
+          <h3>AGUARDANDO PAGTO</h3>
+          <div id="col-pagamento" style="margin-top:12px;"></div>
+        </div>
+        <div class="kanban-col">
+          <h3>PAGO / ENTREGUE</h3>
+          <div id="col-pago" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BASE DE CLIENTES -->
+    <div id="tab-clientes" class="tab-content">
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3>👥 Cadastro de Clientes</h3>
+          <button class="btn btn-primary action-btn" onclick="openModal('modal-client-only')">+ Cadastrar Somente Nome</button>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome do Cliente</th>
+              <th>Data Cadastro</th>
+              <th class="action-btn">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="clients-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: CONTAS PAGAR / RECEBER -->
+    <div id="tab-contas" class="tab-content">
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3>📅 Gestão de Contas Pagar / Receber</h3>
+          <button class="btn btn-primary action-btn" onclick="openModal('modal-bill')">+ Lançar Conta</button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="filter-bill-text" placeholder="Buscar descrição..." oninput="renderBills()">
+          <select id="filter-bill-type" onchange="renderBills()">
+            <option value="TODOS">Todos os Tipos</option>
+            <option value="PAGAR">Contas a Pagar (Dívidas)</option>
+            <option value="RECEBER">Contas a Receber</option>
+          </select>
+          <label style="font-size:0.8rem;">De:</label>
+          <input type="date" id="filter-bill-start" onchange="renderBills()">
+          <label style="font-size:0.8rem;">Até:</label>
+          <input type="date" id="filter-bill-end" onchange="renderBills()">
+          <button class="btn btn-secondary" onclick="clearBillFilters()">Limpar Filtros</button>
+        </div>
+
+        <div class="calc-box">
+          <div><strong>Total Dívidas Futuras / Pendentes:</strong> <span id="period-debt-total" style="color:#f75a68; font-weight:bold;">R$ 0,00</span></div>
+          <div><strong>Total A Receber (Pendente):</strong> <span id="period-receive-total" style="color:#61dafb; font-weight:bold;">R$ 0,00</span></div>
+        </div>
+
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Descrição</th>
+              <th>Vencimento</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th class="action-btn">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="bills-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: EXTRATO FINANCEIRO -->
+    <div id="tab-historico" class="tab-content">
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3>📊 Extrato de Movimentações</h3>
+          <button class="btn btn-danger action-btn" onclick="openModal('modal-expense')">- Lançar Movimentação Direta</button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="filter-hist-text" placeholder="Buscar no histórico..." oninput="renderHistory()">
+          <select id="filter-hist-type" onchange="renderHistory()">
+            <option value="TODOS">Todas Movimentações</option>
+            <option value="ENTRADA">Entradas</option>
+            <option value="SAIDA">Saídas</option>
+          </select>
+          <label style="font-size:0.8rem;">Pesquisar Data Específica:</label>
+          <input type="date" id="filter-hist-date" onchange="renderHistory()">
+          <button class="btn btn-secondary" onclick="resetHistoryToToday()">Voltar para HOJE</button>
+        </div>
+
+        <p style="font-size:0.8rem; color:#00b37e; margin-bottom:10px;" id="hist-current-view-label">Exibindo movimentações de hoje.</p>
+
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Data / Hora</th>
+              <th>Tipo</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+              <th class="action-btn">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 5: GASTOS COM PRODUTOS E INSUMOS -->
+    <div id="tab-produtos-gastos" class="tab-content">
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3>📦 Gastos com Produtos e Insumos</h3>
+          <button class="btn btn-danger action-btn" onclick="openModal('modal-product-expense')">- Registrar Compra de Insumo/Produto</button>
+        </div>
+
+        <div class="calc-box">
+          <div><strong>Total Gasto com Produtos/Insumos:</strong> <span id="product-expense-total" style="color:#f75a68; font-weight:bold;">R$ 0,00</span></div>
+        </div>
+
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Insumo / Produto</th>
+              <th>Quantidade / Unidade</th>
+              <th>Valor Total Gasto</th>
+            </tr>
+          </thead>
+          <tbody id="product-expense-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 6: GRÁFICOS E RELATÓRIOS -->
+    <div id="tab-graficos" class="tab-content">
+      <div class="card-panel">
+        <h3>📈 Visão Gráfica das Movimentações</h3>
+        <div class="filter-bar" style="margin-top:15px;">
+          <label style="font-size:0.8rem;">Data Inicial:</label>
+          <input type="date" id="chart-start-date" onchange="renderCharts()">
+          <label style="font-size:0.8rem;">Data Final:</label>
+          <input type="date" id="chart-end-date" onchange="renderCharts()">
+          <button class="btn btn-secondary" onclick="resetChartDates()">Período Total</button>
+        </div>
+
+        <div style="max-width:800px; margin:20px auto;">
+          <canvas id="financialChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: CATÁLOGO -->
+    <div id="tab-catalogo" class="tab-content">
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3>🏷️ Catálogo de Produtos e Serviços</h3>
+          <button class="btn btn-primary action-btn" onclick="openModal('modal-product')">+ Novo Produto/Serviço</button>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Unidade</th>
+              <th>Custo</th>
+              <th>Venda</th>
+              <th class="action-btn">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="catalog-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 8: GESTÃO DE USUÁRIOS -->
+    <div id="tab-usuarios" class="tab-content">
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3>👤 Cadastro e Gestão de Usuários do Sistema</h3>
+          <button class="btn btn-primary action-btn" onclick="openModal('modal-new-user')">+ Criar Novo Usuário</button>
+        </div>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome / Login</th>
+              <th>Perfil de Acesso</th>
+              <th class="action-btn">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- TELA INICIAL DE LOGIN OBRIGATÓRIA -->
+  <div class="modal-backdrop" id="modal-login" style="display:flex;">
+    <div class="modal-box" style="text-align:center;">
+      <img src="logo.svg" alt="Adriano Designer Pro" style="width:70px; height:70px; margin-bottom:10px; filter:invert(1) brightness(2);">
+      <h2>Adriano Designer Pro</h2>
+      <p style="color:#8d8d99; font-size:0.85rem; margin-bottom:20px;">Acesso Restrito - Informe suas credenciais</p>
+      
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button class="btn btn-primary" style="padding:12px; justify-content:center; font-size:1rem;" onclick="promptMasterPassword()">
+          👑 Acessar como Usuário Master
+        </button>
+        <button class="btn btn-secondary" style="padding:12px; justify-content:center; font-size:1rem;" onclick="accessAsVisitor()">
+          👁️ Acessar como Visitante
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMAIS MODAIS DO SISTEMA -->
+  <div class="modal-backdrop" id="modal-new-user">
+    <div class="modal-box">
+      <h3>➕ Novo Usuário do Sistema</h3>
+      <div class="form-group"><label>Nome do Usuário</label><input type="text" id="user-name-input" placeholder="Ex: Atendente Balcão"></div>
+      <div class="form-group">
+        <label>Perfil de Acesso</label>
+        <select id="user-role-input">
+          <option value="ADMIN">Master / Administrador (Acesso Total)</option>
+          <option value="VISITOR">Visitante (Apenas Visualizar - Sem Valores/Ações)</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-new-user')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveUser()">Salvar Usuário</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-quick-expense">
+    <div class="modal-box">
+      <h3>⚡ Lançamento Rápido de Saída / Compras</h3>
+      <p style="color:#8d8d99; font-size:0.8rem; margin-bottom:12px;">Registre compras do dia a dia (lanches, transporte, insumos pequenos, etc).</p>
+      <div class="form-group"><label>Descrição da Compra</label><input type="text" id="quick-exp-desc" placeholder="Ex: Café, almoço, fita adesiva..."></div>
+      <div class="form-group"><label>Valor Gasto (R$)</label><input type="number" id="quick-exp-val" step="0.01" placeholder="0.00"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-quick-expense')">Cancelar</button>
+        <button class="btn btn-danger" onclick="saveQuickExpense()">Confirmar Saída</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-edit-payment">
+    <div class="modal-box">
+      <h3>✏️ Editar Valor do Pagamento</h3>
+      <input type="hidden" id="edit-payment-cust-id">
+      <div class="form-group"><label>Novo Valor Total (R$)</label><input type="number" id="edit-payment-val" step="0.01"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-payment')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveEditedPayment()">Salvar Valor</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-client-only">
+    <div class="modal-box">
+      <h3>Novo Cliente (Cadastro Rápido)</h3>
+      <div class="form-group"><label>Nome do Cliente</label><input type="text" id="client-only-name" placeholder="Ex: Maria Souza"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-client-only')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveClientOnly()">Salvar Cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-add-queue">
+    <div class="modal-box">
+      <h3>Adicionar Cliente na Fila</h3>
+      <div class="form-group">
+        <label>Buscar Cliente Cadastrado (por Código ou Nome)</label>
+        <input type="text" id="queue-search-client" placeholder="Digite o nome ou código..." oninput="filterClientDropdown()">
+        <select id="queue-client-select" style="margin-top:6px;"></select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de Atendimento</label>
+        <select id="queue-client-type">
+          <option value="Arte Final">Arte Final</option>
+          <option value="Impressão">Impressão</option>
+          <option value="Sublimação">Sublimação</option>
+          <option value="DTF">DTF</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-queue')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmAddToQueue()">Adicionar na Fila</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-proposal">
+    <div class="modal-box">
+      <h3>Montar Proposta / OS</h3>
+      <p id="prop-client-name" style="color:#00b37e; font-weight:bold; margin-bottom:10px;"></p>
+      
+      <div style="background:#121318; border:1px solid #00b37e; padding:10px; border-radius:6px; margin-bottom:12px;">
+        <div style="font-size:0.8rem; color:#8d8d99;">Tempo Cronometrado:</div>
+        <strong id="prop-time-str">00:00:00</strong>
+        <div style="font-size:0.85rem; color:#00b37e; margin-top:2px;">Valor Atendimento (R$ 30/h): <strong>R$ <span id="prop-time-cost">0.00</span></strong></div>
+      </div>
+
+      <div class="form-group"><label>Produto/Serviço Adicional</label><select id="prop-product-select"></select></div>
+      <div class="form-group"><label>Quantidade / Metros</label><input type="number" id="prop-product-qty" value="1.0" step="0.1"></div>
+      <button class="btn btn-info" style="width:100%; margin-bottom:10px;" onclick="addProposalItem()">+ Adicionar Item</button>
+
+      <table class="custom-table" style="margin-bottom:12px;">
+        <thead><tr><th>Item</th><th>Qtd</th><th>Subtotal</th><th>Ação</th></tr></thead>
+        <tbody id="prop-items-body"></tbody>
+      </table>
+
+      <div class="form-group">
+        <label>Desconto (R$)</label>
+        <input type="number" id="prop-discount" value="0.00" step="0.50" oninput="calculateProposalTotal()">
+      </div>
+
+      <div style="font-size:1.1rem; font-weight:bold; color:#00b37e; margin-bottom:15px;">
+        TOTAL FINAL: R$ <span id="prop-total-val">0.00</span>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-proposal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="finishProposal()">Finalizar & Gerar Comprovante</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-whatsapp-receipt">
+    <div class="modal-box">
+      <h3>📲 Comprovante Adriano Designer Pro</h3>
+      <p style="color:#8d8d99; font-size:0.8rem; margin-bottom:12px;">Copie a mensagem abaixo e envie diretamente no WhatsApp do cliente:</p>
+
+      <div class="whatsapp-preview-box" id="whatsapp-receipt-text"></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-whatsapp-receipt')">Fechar</button>
+        <button class="btn btn-primary" onclick="copyWhatsAppReceipt()">📋 Copiar para o WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-bill">
+    <div class="modal-box">
+      <h3 id="modal-bill-title">Lançar Conta</h3>
+      <input type="hidden" id="edit-bill-id">
+      
+      <div class="form-group">
+        <label>Tipo de Operação</label>
+        <select id="bill-type">
+          <option value="PAGAR">Conta a Pagar (Dívida)</option>
+          <option value="RECEBER">Conta a Receber</option>
+        </select>
+      </div>
+      
+      <div class="form-group"><label>Descrição / Fornecedor</label><input type="text" id="bill-desc" placeholder="Ex: Bobina Lona 440g"></div>
+      <div class="form-group"><label>Data do Vencimento</label><input type="date" id="bill-date"></div>
+      <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="bill-val" step="0.01" placeholder="0.00"></div>
+      
+      <div class="form-group" style="margin-top:10px; background:#121318; padding:10px; border-radius:6px; border:1px solid #282930;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="chk-has-installments" onchange="toggleInstallmentField()"> 
+          <span>A conta possui parcelas?</span>
+        </label>
+
+        <div id="installment-box" style="display:none; margin-top:10px;">
+          <label>Quantidade de Parcelas</label>
+          <input type="number" id="bill-installments" value="2" min="2" max="36" placeholder="Ex: 6">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-bill')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveBill()">Salvar Conta</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-expense">
+    <div class="modal-box">
+      <h3 id="modal-hist-title">Lançar Movimentação Direta</h3>
+      <input type="hidden" id="edit-hist-id">
+      <div class="form-group">
+        <label>Tipo de Movimentação</label>
+        <select id="exp-type">
+          <option value="SAIDA">Saída / Despesa</option>
+          <option value="ENTRADA">Entrada / Recebimento</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Descrição</label><input type="text" id="exp-desc"></div>
+      <div class="form-group"><label>Valor (R$)</label><input type="number" id="exp-val" step="0.01"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-expense')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveExpense()">Salvar Lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-product-expense">
+    <div class="modal-box">
+      <h3>Registrar Compra de Insumo / Produto</h3>
+      <div class="form-group"><label>Nome do Insumo/Produto</label><input type="text" id="prod-exp-name" placeholder="Ex: Tinta Ecotack 1L"></div>
+      <div class="form-group"><label>Quantidade / Unidade</label><input type="text" id="prod-exp-qty" placeholder="Ex: 2 unidades / 5 metros"></div>
+      <div class="form-group"><label>Valor Total Gasto (R$)</label><input type="number" id="prod-exp-val" step="0.01" placeholder="0.00"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-product-expense')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveProductExpense()">Registrar Gasto</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-product">
+    <div class="modal-box">
+      <h3 id="modal-prod-title">Novo Produto/Serviço</h3>
+      <input type="hidden" id="edit-prod-id">
+      <div class="form-group"><label>Nome do Produto</label><input type="text" id="prod-name"></div>
+      <div class="form-group"><label>Unidade</label><input type="text" id="prod-unit" placeholder="UN ou M"></div>
+      <div class="form-group"><label>Custo (R$)</label><input type="number" id="prod-cost" step="0.01"></div>
+      <div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="prod-price" step="0.01"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-product')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveProduct()">Salvar Produto</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tvChannel = new BroadcastChannel('tv_channel');
+    let db = null;
+    let financialChartInstance = null;
+
+    function updateClock() { document.getElementById('clock-time').innerText = new Date().toLocaleTimeString('pt-BR'); }
+    setInterval(updateClock, 1000); updateClock();
+
+    let customers = [], transactions = [], bills = [], catalog = [], productExpenses = [], registeredClients = [], users = [];
+    let proposalItems = [];
+    let isPrivate = false;
+    let userMode = null;
+
+    let timerInterval = null;
+    let timerSeconds = 0;
+
+    // SENHA PADRÃO DO MASTER (ALTERE CONFORME DESEJAR)
+    const MASTER_PASSWORD = "123";
+
+    async function initDatabase() {
+      const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` });
+      
+      const savedDb = localStorage.getItem('adriano_db_sqlite');
+      if (savedDb) {
+        const uInt8Array = new Uint8Array(JSON.parse(savedDb));
+        db = new SQL.Database(uInt8Array);
+      } else {
+        db = new SQL.Database();
+        createTables();
+      }
+      loadDataFromDB();
+    }
+
+    function createTables() {
+      db.run(`CREATE TABLE IF NOT EXISTS registered_clients (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, name TEXT, date_created TEXT);`);
+      db.run(`CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY, name TEXT, type TEXT, status TEXT, total REAL, timerRunning INTEGER, elapsedTime INTEGER, lastUpdated INTEGER);`);
+      db.run(`CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY, type TEXT, desc TEXT, amount REAL, date TEXT);`);
+      db.run(`CREATE TABLE IF NOT EXISTS bills (id INTEGER PRIMARY KEY, type TEXT, desc TEXT, date TEXT, amount REAL, status TEXT);`);
+      db.run(`CREATE TABLE IF NOT EXISTS catalog (id INTEGER PRIMARY KEY, name TEXT, cost REAL, price REAL, unit TEXT);`);
+      db.run(`CREATE TABLE IF NOT EXISTS product_expenses (id INTEGER PRIMARY KEY, name TEXT, qty TEXT, amount REAL, date TEXT);`);
+      db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, role TEXT);`);
+
+      db.run(`INSERT INTO catalog VALUES (1, 'Arte Final Simples', 0, 10, 'UN'), (2, 'Arte Final Sublimação', 0, 25, 'UN'), (3, 'Arte Final DTF', 0, 15, 'UN'), (4, 'Impressão Clear Film/m', 16, 40, 'M'), (5, 'Impressão DTF/m', 30, 37, 'M');`);
+      db.run(`INSERT INTO users (name, role) VALUES ('Adriano Master', 'ADMIN'), ('Visitante', 'VISITOR');`);
+      saveDBToLocalStorage();
+    }
+
+    function saveDBToLocalStorage() {
+      if (!db) return;
+      const data = db.export();
+      const array = Array.from(data);
+      localStorage.setItem('adriano_db_sqlite', JSON.stringify(array));
+      tvChannel.postMessage('update');
+    }
+
+    function loadDataFromDB() {
+      registeredClients = queryAll("SELECT * FROM registered_clients");
+      customers = queryAll("SELECT * FROM customers").map(c => ({...c, timerRunning: Boolean(c.timerRunning)}));
+      transactions = queryAll("SELECT * FROM transactions");
+      bills = queryAll("SELECT * FROM bills");
+      catalog = queryAll("SELECT * FROM catalog");
+      productExpenses = queryAll("SELECT * FROM product_expenses");
+      users = queryAll("SELECT * FROM users");
+
+      // Atualiza o tempo do atendimento caso tenha mudado de página
+      const now = Date.now();
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO' && c.timerRunning);
+      if (active && active.lastUpdated) {
+        const diffSecs = Math.floor((now - active.lastUpdated) / 1000);
+        if (diffSecs > 0) {
+          active.elapsedTime = (active.elapsedTime || 0) + diffSecs;
+          db.run(`UPDATE customers SET elapsedTime = ${active.elapsedTime}, lastUpdated = ${now} WHERE id = ${active.id}`);
+        }
+      }
+    }
+
+    function queryAll(sql) {
+      const res = db.exec(sql);
+      if (res.length === 0) return [];
+      const columns = res[0].columns;
+      return res[0].values.map(row => {
+        let obj = {};
+        columns.forEach((col, i) => obj[col] = row[i]);
+        return obj;
+      });
+    }
+
+    window.onload = () => { 
+      initDatabase();
+      // Oculta completamente o painel na inicialização
+      document.getElementById('app-body').classList.add('system-locked');
+      openModal('modal-login');
+    };
+
+    /* SISTEMA DE LOGIN / DESBLOQUEIO */
+    function promptMasterPassword() {
+      const pass = prompt("🔐 Digite a Senha do Usuário Master:");
+      if (pass === MASTER_PASSWORD) {
+        unlockSystem('MASTER');
+      } else if (pass !== null) {
+        alert("❌ Senha Incorreta!");
+      }
+    }
+
+    function accessAsVisitor() {
+      unlockSystem('VISITOR');
+    }
+
+    function unlockSystem(mode) {
+      userMode = mode;
+      document.getElementById('app-body').classList.remove('system-locked');
+      closeModal('modal-login');
+      applyUserPermissions();
+      renderAll();
+    }
+
+    function logoutSystem() {
+      userMode = null;
+      document.getElementById('app-body').classList.add('system-locked');
+      openModal('modal-login');
+    }
+
+    function applyUserPermissions() {
+      const appBody = document.getElementById('app-body');
+      const badge = document.getElementById('current-user-display');
+
+      if (userMode === 'VISITOR') {
+        appBody.classList.add('visitor-mode');
+        isPrivate = true;
+        badge.innerText = '👁️ Visitante (Sem Função)';
+        badge.style.borderColor = '#ffb800';
+        badge.style.color = '#ffb800';
+      } else {
+        appBody.classList.remove('visitor-mode');
+        isPrivate = false;
+        badge.innerText = '👑 Usuário Master';
+        badge.style.borderColor = '#00b37e';
+        badge.style.color = '#00b37e';
+      }
+      document.getElementById('eye-text').innerText = isPrivate ? 'Mostrar Valores' : 'Ocultar Valores';
+    }
+
+    /* BACKUP: EXPORTAR E RESTAURAR */
+    function exportToExcel() {
+      let csvContent = "\uFEFF";
+
+      csvContent += "=== CLIENTES ===\n";
+      csvContent += "Codigo;Nome do Cliente;Data Cadastro\n";
+      registeredClients.forEach(c => { csvContent += `"${c.code}";"${c.name}";"${c.date_created}"\n`; });
+      csvContent += "\n";
+
+      csvContent += "=== TRANSACOES ===\n";
+      csvContent += "Data Hora;Tipo;Descricao;Valor\n";
+      transactions.forEach(t => { csvContent += `"${t.date}";"${t.type}";"${t.desc}";"${t.amount}"\n`; });
+      csvContent += "\n";
+
+      csvContent += "=== CONTAS ===\n";
+      csvContent += "Tipo;Descricao;Vencimento;Valor;Status\n";
+      bills.forEach(b => { csvContent += `"${b.type}";"${b.desc}";"${b.date}";"${b.amount}";"${b.status}"\n`; });
+      csvContent += "\n";
+
+      csvContent += "=== INSUMOS ===\n";
+      csvContent += "Data;Nome;Quantidade;Valor\n";
+      productExpenses.forEach(p => { csvContent += `"${p.date}";"${p.name}";"${p.qty}";"${p.amount}"\n`; });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      const today = new Date().toISOString().split('T')[0];
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Backup_Adriano_Designer_Pro_${today}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function triggerImport() {
+      document.getElementById('import-file-input').click();
+    }
+
+    function importBackupFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        
+        let section = "";
+        lines.forEach(line => {
+          line = line.trim();
+          if (!line) return;
+
+          if (line.includes("=== CLIENTES ===")) section = "CLIENTES";
+          else if (line.includes("=== TRANSACOES ===")) section = "TRANSACOES";
+          else if (line.includes("=== CONTAS ===")) section = "CONTAS";
+          else if (line.includes("=== INSUMOS ===")) section = "INSUMOS";
+          else if (!line.startsWith("Codigo;") && !line.startsWith("Data Hora;") && !line.startsWith("Tipo;") && !line.startsWith("Data;")) {
+            const cols = line.split(';').map(c => c.replace(/^"|"$/g, ''));
+            if (section === "CLIENTES" && cols.length >= 3) {
+              db.run(`INSERT INTO registered_clients (code, name, date_created) VALUES ('${cols[0]}', '${cols[1]}', '${cols[2]}')`);
+            } else if (section === "TRANSACOES" && cols.length >= 4) {
+              db.run(`INSERT INTO transactions (id, type, desc, amount, date) VALUES (${Date.now() + Math.random()}, '${cols[1]}', '${cols[2]}', ${parseFloat(cols[3]) || 0}, '${cols[0]}')`);
+            } else if (section === "CONTAS" && cols.length >= 5) {
+              db.run(`INSERT INTO bills (id, type, desc, date, amount, status) VALUES (${Date.now() + Math.random()}, '${cols[0]}', '${cols[1]}', '${cols[2]}', ${parseFloat(cols[3]) || 0}, '${cols[4]}')`);
+            } else if (section === "INSUMOS" && cols.length >= 4) {
+              db.run(`INSERT INTO product_expenses (id, name, qty, amount, date) VALUES (${Date.now() + Math.random()}, '${cols[1]}', '${cols[2]}', ${parseFloat(cols[3]) || 0}, '${cols[0]}')`);
+            }
+          }
+        });
+
+        loadDataFromDB();
+        renderAll();
+        alert('✅ Backup Importado e Restaurado com Sucesso!');
+      };
+      reader.readAsText(file);
+    }
+
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+      if (id === 'tab-graficos') renderCharts();
+    }
+
+    function renderAll() {
+      renderActiveCustomer();
+      renderKanban();
+      renderRegisteredClients();
+      renderBills();
+      renderHistory();
+      renderCatalog();
+      renderProductExpenses();
+      renderUsers();
+      renderKPIs();
+      checkTodayBillsAlert();
+      saveDBToLocalStorage();
+    }
+
+    function renderUsers() {
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td><strong>${u.name}</strong></td>
+          <td>${u.role === 'ADMIN' ? '👑 Master (Acesso Total)' : '👁️ Visitante Sem Função (Valores Ocultos)'}</td>
+          <td class="action-btn">
+            ${u.id > 2 ? `<button class="btn btn-danger" style="font-size:0.7rem;" onclick="deleteUser(${u.id})">🗑️ Excluir</button>` : '---'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function saveUser() {
+      const name = document.getElementById('user-name-input').value.trim();
+      const role = document.getElementById('user-role-input').value;
+
+      if (!name) return alert('Digite o nome do usuário!');
+
+      db.run(`INSERT INTO users (name, role) VALUES ('${name}', '${role}')`);
+      closeModal('modal-new-user');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function deleteUser(id) {
+      if (confirm('Deseja remover este usuário?')) {
+        db.run(`DELETE FROM users WHERE id = ${id}`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function openEditPaymentModal(custId, currentTotal) {
+      document.getElementById('edit-payment-cust-id').value = custId;
+      document.getElementById('edit-payment-val').value = currentTotal || 0;
+      openModal('modal-edit-payment');
+    }
+
+    function saveEditedPayment() {
+      const custId = parseInt(document.getElementById('edit-payment-cust-id').value);
+      const val = parseFloat(document.getElementById('edit-payment-val').value);
+
+      if (isNaN(val) || val < 0) return alert('Digite um valor válido!');
+
+      db.run(`UPDATE customers SET total = ${val} WHERE id = ${custId}`);
+      closeModal('modal-edit-payment');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function sendCustomerToAccountsReceivable(custId) {
+      const c = customers.find(cust => cust.id === custId);
+      if (!c) return;
+
+      if (confirm(`Deseja mover o débito de R$ ${c.total.toFixed(2)} de "${c.name}" para Contas a Receber (Pendente)?`)) {
+        const bId = Date.now();
+        const today = new Date().toISOString().split('T')[0];
+        
+        db.run(`INSERT INTO bills VALUES (${bId}, 'RECEBER', 'Pendente Cliente: ${c.name} (${c.type})', '${today}', ${c.total}, 'PENDENTE')`);
+        db.run(`DELETE FROM customers WHERE id = ${custId}`);
+        
+        loadDataFromDB();
+        renderAll();
+        alert('Movido com sucesso para "A Receber (Pendente)"!');
+      }
+    }
+
+    function openQuickExpenseModal() {
+      document.getElementById('quick-exp-desc').value = '';
+      document.getElementById('quick-exp-val').value = '';
+      openModal('modal-quick-expense');
+    }
+
+    function saveQuickExpense() {
+      const desc = document.getElementById('quick-exp-desc').value.trim();
+      const val = parseFloat(document.getElementById('quick-exp-val').value);
+
+      if (!desc || isNaN(val) || val <= 0) return alert('Informe a descrição e o valor da compra!');
+
+      const id = Date.now();
+      const nowIso = new Date().toISOString();
+
+      db.run(`INSERT INTO transactions VALUES (${id}, 'SAIDA', 'Compra Dia a Dia: ${desc}', ${val}, '${nowIso}')`);
+      closeModal('modal-quick-expense');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function renderRegisteredClients() {
+      const tbody = document.getElementById('clients-table-body');
+      tbody.innerHTML = registeredClients.map(c => `
+        <tr>
+          <td><strong style="color:#00b37e;">${c.code}</strong></td>
+          <td>${c.name}</td>
+          <td>${c.date_created}</td>
+          <td class="action-btn">
+            <button class="btn btn-danger" style="font-size:0.7rem;" onclick="deleteRegisteredClient(${c.id})">🗑️ Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function saveClientOnly() {
+      const name = document.getElementById('client-only-name').value.trim();
+      if (!name) return alert('Digite o nome do cliente!');
+
+      const countRes = queryAll("SELECT COUNT(*) as total FROM registered_clients");
+      const count = countRes.length > 0 ? countRes[0].total + 1 : 1;
+      const code = `CLI-${String(count).padStart(3, '0')}`;
+      const today = new Date().toLocaleDateString('pt-BR');
+
+      db.run(`INSERT INTO registered_clients (code, name, date_created) VALUES ('${code}', '${name}', '${today}')`);
+      document.getElementById('client-only-name').value = '';
+      closeModal('modal-client-only');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function deleteRegisteredClient(id) {
+      if (confirm('Deseja excluir este cliente cadastrado?')) {
+        db.run(`DELETE FROM registered_clients WHERE id = ${id}`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function openAddQueueModal() {
+      filterClientDropdown();
+      openModal('modal-add-queue');
+    }
+
+    function filterClientDropdown() {
+      const search = document.getElementById('queue-search-client').value.toLowerCase();
+      const select = document.getElementById('queue-client-select');
+      
+      const filtered = registeredClients.filter(c => c.name.toLowerCase().includes(search) || c.code.toLowerCase().includes(search));
+      
+      let html = `<option value="NEW">-- Cadastrar Novo Automaticamente --</option>`;
+      html += filtered.map(c => `<option value="${c.id}">${c.code} - ${c.name}</option>`).join('');
+      select.innerHTML = html;
+    }
+
+    function confirmAddToQueue() {
+      const selectVal = document.getElementById('queue-client-select').value;
+      const searchTxt = document.getElementById('queue-search-client').value.trim();
+      const serviceType = document.getElementById('queue-client-type').value;
+
+      let clientName = "";
+
+      if (selectVal === "NEW") {
+        if (!searchTxt) return alert('Digite o nome do cliente para cadastrar!');
+        clientName = searchTxt;
+
+        const countRes = queryAll("SELECT COUNT(*) as total FROM registered_clients");
+        const count = countRes.length > 0 ? countRes[0].total + 1 : 1;
+        const code = `CLI-${String(count).padStart(3, '0')}`;
+        const today = new Date().toLocaleDateString('pt-BR');
+
+        db.run(`INSERT INTO registered_clients (code, name, date_created) VALUES ('${code}', '${clientName}', '${today}')`);
+      } else {
+        const found = registeredClients.find(c => c.id === parseInt(selectVal));
+        if (found) clientName = found.name;
+      }
+
+      const id = Date.now();
+      db.run(`INSERT INTO customers VALUES (${id}, '${clientName}', '${serviceType}', 'AGENDADO', 0, 0, 0, ${Date.now()})`);
+      
+      closeModal('modal-add-queue');
+      loadDataFromDB();
+
+      if (!customers.some(cust => cust.status === 'EM_ANDAMENTO')) {
+        db.run(`UPDATE customers SET status = 'EM_ANDAMENTO' WHERE id = ${id}`);
+        loadDataFromDB();
+      }
+
+      renderAll();
+    }
+
+    function renderActiveCustomer() {
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+      const timerDisplay = document.getElementById('active-timer');
+      const btnStart = document.getElementById('btn-start-timer');
+      const btnPause = document.getElementById('btn-pause-timer');
+      const badge = document.getElementById('active-badge');
+
+      if (active) {
+        document.getElementById('featured-name').innerText = active.name;
+        document.getElementById('featured-desc').innerText = `Serviço: ${active.type}`;
+
+        timerSeconds = active.elapsedTime || 0;
+        updateTimerDisplay();
+
+        if (active.timerRunning) {
+          btnStart.style.display = 'none';
+          btnPause.style.display = 'inline-flex';
+          btnPause.innerText = '⏸️ Pausar';
+          timerDisplay.classList.remove('timer-paused');
+          badge.innerText = "EM ATENDIMENTO (RODANDO)";
+          badge.style.background = "rgba(0,179,126,0.2)";
+          badge.style.color = "#00b37e";
+          startTimerLoop();
+        } else if (timerSeconds > 0) {
+          btnStart.style.display = 'inline-flex';
+          btnStart.innerText = '▶️ Retomar Atendimento';
+          btnPause.style.display = 'none';
+          timerDisplay.classList.add('timer-paused');
+          badge.innerText = "ATENDIMENTO PAUSADO";
+          badge.style.background = "rgba(255,184,0,0.2)";
+          badge.style.color = "#ffb800";
+          stopTimerLoop();
+        } else {
+          btnStart.style.display = 'inline-flex';
+          btnStart.innerText = '▶️ Iniciar Atendimento';
+          btnPause.style.display = 'none';
+          timerDisplay.classList.remove('timer-paused');
+          badge.innerText = "AGUARDANDO INÍCIO";
+          badge.style.background = "rgba(97,218,251,0.2)";
+          badge.style.color = "#61dafb";
+          stopTimerLoop();
+        }
+      } else {
+        document.getElementById('featured-name').innerText = "Livre";
+        document.getElementById('featured-desc').innerText = "Nenhum cliente em atendimento";
+        btnStart.style.display = 'none';
+        btnPause.style.display = 'none';
+        timerDisplay.classList.remove('timer-paused');
+        badge.innerText = "SEM ATENDIMENTO";
+        stopTimerLoop();
+        timerSeconds = 0;
+        updateTimerDisplay();
+      }
+    }
+
+    function startAttendanceTimer() {
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+      if (active) {
+        db.run(`UPDATE customers SET timerRunning = 1, lastUpdated = ${Date.now()} WHERE id = ${active.id}`);
+        loadDataFromDB();
+        renderActiveCustomer();
+      }
+    }
+
+    function pauseAttendanceTimer() {
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+      if (active) {
+        db.run(`UPDATE customers SET timerRunning = 0, elapsedTime = ${timerSeconds}, lastUpdated = ${Date.now()} WHERE id = ${active.id}`);
+        loadDataFromDB();
+        renderActiveCustomer();
+      }
+    }
+
+    function startTimerLoop() {
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          timerSeconds++;
+          const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+          if (active) {
+            db.run(`UPDATE customers SET elapsedTime = ${timerSeconds}, lastUpdated = ${Date.now()} WHERE id = ${active.id}`);
+          }
+          updateTimerDisplay();
+          saveDBToLocalStorage();
+        }, 1000);
+      }
+    }
+
+    function stopTimerLoop() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateTimerDisplay() {
+      const hrs = String(Math.floor(timerSeconds / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, '0');
+      const secs = String(timerSeconds % 60).padStart(2, '0');
+      document.getElementById('active-timer').innerText = `${hrs}:${mins}:${secs}`;
+    }
+
+    function renderKanban() {
+      const cols = ['agendado', 'retorno', 'pagamento', 'pago'];
+      const statusMap = { 'agendado': 'AGENDADO', 'retorno': 'ESPERANDO_RETORNO', 'pagamento': 'AGUARDANDO_PAGAMENTO', 'pago': 'PAGO' };
+
+      cols.forEach(col => {
+        const list = customers.filter(c => c.status === statusMap[col]);
+        document.getElementById(`col-${col}`).innerHTML = list.map(c => `
+          <div class="kanban-card">
+            <h4>${c.name}</h4>
+            <p>${c.type}</p>
+            ${c.total > 0 ? `<p style="color:#00b37e; font-weight:bold;">OS: ${isPrivate ? 'R$ ****,**' : 'R$ ' + c.total.toFixed(2)}</p>` : ''}
+            <div style="display:flex; gap:4px; margin-top:8px; flex-wrap:wrap;" class="action-btn">
+              ${col === 'agendado' || col === 'retorno' ? `<button class="btn btn-primary" style="font-size:0.7rem; padding:3px;" onclick="setAsActive(${c.id})">Atender</button>` : ''}
+              ${col === 'pagamento' ? `
+                <button class="btn btn-primary" style="font-size:0.7rem; padding:3px;" onclick="markAsPaid(${c.id})">Quitar</button>
+                <button class="btn btn-warning" style="font-size:0.7rem; padding:3px;" onclick="openEditPaymentModal(${c.id},${c.total})">✏️ Valor</button>
+                <button class="btn btn-info" style="font-size:0.7rem; padding:3px;" onclick="sendCustomerToAccountsReceivable(${c.id})">📌 A Receber</button>
+              ` : ''}
+              <button class="btn btn-danger" style="font-size:0.7rem; padding:3px;" onclick="deleteCustomer(${c.id})">🗑️</button>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+
+    function setAsActive(id) {
+      db.run(`UPDATE customers SET status = 'AGENDADO', timerRunning = 0 WHERE status = 'EM_ANDAMENTO'`);
+      db.run(`UPDATE customers SET status = 'EM_ANDAMENTO', timerRunning = 0 WHERE id = ${id}`);
+      stopTimerLoop();
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function moveToWaitingReturn() {
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+      if (active) {
+        db.run(`UPDATE customers SET status = 'ESPERANDO_RETORNO', timerRunning = 0 WHERE id = ${active.id}`);
+        stopTimerLoop();
+
+        const next = customers.find(c => c.status === 'AGENDADO');
+        if (next) {
+          db.run(`UPDATE customers SET status = 'EM_ANDAMENTO', timerRunning = 0, elapsedTime = 0 WHERE id = ${next.id}`);
+        }
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function deleteCustomer(id) {
+      if (confirm('Remover este cliente da fila?')) {
+        db.run(`DELETE FROM customers WHERE id = ${id}`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function copyNextInQueueMsg() {
+      const next = customers.find(c => c.status === 'AGENDADO');
+      if (next) {
+        navigator.clipboard.writeText(`Olá ${next.name}! Seu atendimento é o próximo da fila. Já estou finalizando o serviço anterior!`);
+        alert('Mensagem copiada para o WhatsApp!');
+      } else alert('Ninguém na fila.');
+    }
+
+    function openProposalModal() {
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+      if (!active) return;
+
+      pauseAttendanceTimer();
+
+      document.getElementById('prop-client-name').innerText = `Cliente: ${active.name}`;
+      
+      const hourlyRate = 30.00;
+      const timeCostExact = (timerSeconds / 3600) * hourlyRate;
+      const timeCostFormatted = parseFloat(timeCostExact.toFixed(2));
+      
+      const hrsStr = String(Math.floor(timerSeconds / 3600)).padStart(2, '0');
+      const minsStr = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, '0');
+      const secsStr = String(timerSeconds % 60).padStart(2, '0');
+
+      document.getElementById('prop-time-str').innerText = `${hrsStr}:${minsStr}:${secsStr}`;
+      document.getElementById('prop-time-cost').innerText = timeCostFormatted.toFixed(2);
+
+      proposalItems = [{ name: 'Atendimento & Criação Gráfica', qty: 1, subtotal: timeCostFormatted }];
+      
+      const sel = document.getElementById('prop-product-select');
+      sel.innerHTML = catalog.map(p => `<option value="${p.id}">${p.name} - R$ ${p.price.toFixed(2)}</option>`).join('');
+
+      renderProposalItems();
+      openModal('modal-proposal');
+    }
+
+    function addProposalItem() {
+      const prodId = parseInt(document.getElementById('prop-product-select').value);
+      const qty = parseFloat(document.getElementById('prop-product-qty').value);
+      const prod = catalog.find(p => p.id === prodId);
+
+      proposalItems.push({ name: prod.name, qty: qty, subtotal: prod.price * qty });
+      renderProposalItems();
+    }
+
+    function removePropItem(idx) {
+      proposalItems.splice(idx, 1);
+      renderProposalItems();
+    }
+
+    function renderProposalItems() {
+      const tbody = document.getElementById('prop-items-body');
+      tbody.innerHTML = proposalItems.map((item, idx) => `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.qty}</td>
+          <td>R$ ${item.subtotal.toFixed(2)}</td>
+          <td>${idx > 0 ? `<button onclick="removePropItem(${idx})" style="color:red; border:none; background:none; cursor:pointer;">❌</button>` : '---'}</td>
+        </tr>
+      `).join('');
+      calculateProposalTotal();
+    }
+
+    function calculateProposalTotal() {
+      const subtotal = proposalItems.reduce((acc, item) => acc + item.subtotal, 0);
+      const discount = parseFloat(document.getElementById('prop-discount').value) || 0;
+      const total = Math.max(subtotal - discount, 0);
+      document.getElementById('prop-total-val').innerText = total.toFixed(2);
+    }
+
+    function finishProposal() {
+      const active = customers.find(c => c.status === 'EM_ANDAMENTO');
+      if (!active) return;
+
+      const subtotal = proposalItems.reduce((acc, item) => acc + item.subtotal, 0);
+      const discount = parseFloat(document.getElementById('prop-discount').value) || 0;
+      const total = parseFloat(document.getElementById('prop-total-val').innerText);
+
+      db.run(`UPDATE customers SET total = ${total}, status = 'AGUARDANDO_PAGAMENTO', timerRunning = 0 WHERE id = ${active.id}`);
+
+      let receiptText = `*🎨 ADRIANO DESIGNER PRO - ORDEM DE SERVIÇO*\n`;
+      receiptText += `*Cliente:* ${active.name}\n`;
+      receiptText += `*Serviço:* ${active.type}\n`;
+      receiptText += `------------------------------------\n`;
+      receiptText += `*ITENS SOLICITADOS:*\n`;
+
+      proposalItems.forEach((item, i) => {
+        receiptText += `${i+1}. ${item.name} (${item.qty}x) = R$ ${item.subtotal.toFixed(2)}\n`;
+      });
+
+      receiptText += `------------------------------------\n`;
+      receiptText += `*Subtotal:* R$ ${subtotal.toFixed(2)}\n`;
+      if (discount > 0) {
+        receiptText += `*Desconto Aplicado:* -R$ ${discount.toFixed(2)}\n`;
+      }
+      receiptText += `*VALOR TOTAL FINAL:* R$ ${total.toFixed(2)}\n`;
+      receiptText += `------------------------------------\n\n`;
+      receiptText += `*Confirme sua arte final e seu valor. Posso mandar para produção?*`;
+
+      document.getElementById('whatsapp-receipt-text').innerText = receiptText;
+
+      stopTimerLoop();
+      closeModal('modal-proposal');
+      openModal('modal-whatsapp-receipt');
+
+      const next = customers.find(c => c.status === 'AGENDADO');
+      if (next) {
+        db.run(`UPDATE customers SET status = 'EM_ANDAMENTO', timerRunning = 0, elapsedTime = 0 WHERE id = ${next.id}`);
+      }
+      
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function copyWhatsAppReceipt() {
+      const text = document.getElementById('whatsapp-receipt-text').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Comprovante copiado com sucesso!');
+      closeModal('modal-whatsapp-receipt');
+    }
+
+    function toggleInstallmentField() {
+      const chk = document.getElementById('chk-has-installments').checked;
+      document.getElementById('installment-box').style.display = chk ? 'block' : 'none';
+    }
+
+    function renderBills() {
+      const txt = document.getElementById('filter-bill-text').value.toLowerCase();
+      const type = document.getElementById('filter-bill-type').value;
+      const startDate = document.getElementById('filter-bill-start').value;
+      const endDate = document.getElementById('filter-bill-end').value;
+
+      let filtered = bills.filter(b => {
+        if (txt && !b.desc.toLowerCase().includes(txt)) return false;
+        if (type !== 'TODOS' && b.type !== type) return false;
+        if (startDate && b.date < startDate) return false;
+        if (endDate && b.date > endDate) return false;
+        return true;
+      });
+
+      const periodDebt = filtered.filter(b => b.type === 'PAGAR' && b.status === 'PENDENTE').reduce((acc, b) => acc + b.amount, 0);
+      const periodReceive = filtered.filter(b => b.type === 'RECEBER' && b.status === 'PENDENTE').reduce((acc, b) => acc + b.amount, 0);
+
+      document.getElementById('period-debt-total').innerText = isPrivate ? 'R$ ****,**' : `R$ ${periodDebt.toFixed(2)}`;
+      document.getElementById('period-receive-total').innerText = isPrivate ? 'R$ ****,**' : `R$ ${periodReceive.toFixed(2)}`;
+
+      const tbody = document.getElementById('bills-table-body');
+      tbody.innerHTML = filtered.map(b => `
+        <tr>
+          <td><strong style="color:${b.type === 'PAGAR' ? '#f75a68' : '#61dafb'}">${b.type}</strong></td>
+          <td>${b.desc}</td>
+          <td>${b.date}</td>
+          <td>${isPrivate ? 'R$ ****,**' : 'R$ ' + b.amount.toFixed(2)}</td>
+          <td>${b.status}</td>
+          <td class="action-btn">
+            ${b.status === 'PENDENTE' ? `<button class="btn btn-primary" style="font-size:0.7rem;" onclick="settleBill(${b.id})">Quitar</button>` : ''}
+            <button class="btn btn-danger" style="font-size:0.7rem;" onclick="deleteBill(${b.id})">🗑️ Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function saveBill() {
+      const type = document.getElementById('bill-type').value;
+      const desc = document.getElementById('bill-desc').value.trim();
+      const dateVal = document.getElementById('bill-date').value;
+      const amount = parseFloat(document.getElementById('bill-val').value);
+      const hasInstallments = document.getElementById('chk-has-installments').checked;
+      const installments = hasInstallments ? (parseInt(document.getElementById('bill-installments').value) || 1) : 1;
+
+      if (!desc || !dateVal || isNaN(amount)) return alert('Preencha todos os campos!');
+
+      const valParcela = amount / installments;
+      for (let i = 0; i < installments; i++) {
+        let d = new Date(dateVal + 'T00:00:00');
+        d.setMonth(d.getMonth() + i);
+        const formattedDate = d.toISOString().split('T')[0];
+        const installmentDesc = installments > 1 ? `${desc} (Parc. ${i+1}/${installments})` : desc;
+        const id = Date.now() + i;
+
+        db.run(`INSERT INTO bills VALUES (${id}, '${type}', '${installmentDesc}', '${formattedDate}', ${valParcela}, 'PENDENTE')`);
+      }
+
+      closeModal('modal-bill');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function settleBill(id) {
+      const b = bills.find(item => item.id === id);
+      if (b) {
+        db.run(`UPDATE bills SET status = 'PAGO' WHERE id = ${id}`);
+        const tId = Date.now();
+        const tType = b.type === 'PAGAR' ? 'SAIDA' : 'ENTRADA';
+        const nowIso = new Date().toISOString();
+        db.run(`INSERT INTO transactions VALUES (${tId}, '${tType}', 'Baixa Conta: ${b.desc}', ${b.amount}, '${nowIso}')`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function deleteBill(id) {
+      if (confirm('Excluir esta conta?')) {
+        db.run(`DELETE FROM bills WHERE id = ${id}`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function clearBillFilters() {
+      document.getElementById('filter-bill-text').value = '';
+      document.getElementById('filter-bill-type').value = 'TODOS';
+      document.getElementById('filter-bill-start').value = '';
+      document.getElementById('filter-bill-end').value = '';
+      renderBills();
+    }
+
+    function checkTodayBillsAlert() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayBills = bills.filter(b => b.type === 'PAGAR' && b.status === 'PENDENTE' && b.date === today);
+      const alertBanner = document.getElementById('today-bills-alert');
+      if (todayBills.length > 0) {
+        alertBanner.style.display = 'block';
+      } else {
+        alertBanner.style.display = 'none';
+      }
+    }
+
+    function renderHistory() {
+      const txt = document.getElementById('filter-hist-text').value.toLowerCase();
+      const type = document.getElementById('filter-hist-type').value;
+      const dateFilter = document.getElementById('filter-hist-date').value;
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const targetDate = dateFilter || todayStr;
+
+      document.getElementById('hist-current-view-label').innerText = dateFilter 
+        ? `Exibindo movimentações da data: ${dateFilter}` 
+        : `Exibindo movimentações de HOJE (${todayStr})`;
+
+      const filtered = transactions.filter(t => {
+        if (txt && !t.desc.toLowerCase().includes(txt)) return false;
+        if (type !== 'TODOS' && t.type !== type) return false;
+        if (!t.date.startsWith(targetDate)) return false;
+        return true;
+      });
+
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = filtered.map(t => `
+        <tr>
+          <td>${new Date(t.date).toLocaleString('pt-BR')}</td>
+          <td><strong style="color:${t.type === 'ENTRADA' ? '#00b37e' : '#f75a68'}">${t.type}</strong></td>
+          <td>${t.desc}</td>
+          <td>${isPrivate ? 'R$ ****,**' : 'R$ ' + t.amount.toFixed(2)}</td>
+          <td class="action-btn">
+            <button class="btn btn-danger" style="font-size:0.7rem;" onclick="deleteTransaction(${t.id})">🗑️ Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function resetHistoryToToday() {
+      document.getElementById('filter-hist-date').value = '';
+      renderHistory();
+    }
+
+    function saveExpense() {
+      const type = document.getElementById('exp-type').value;
+      const desc = document.getElementById('exp-desc').value.trim();
+      const val = parseFloat(document.getElementById('exp-val').value);
+
+      if (!desc || isNaN(val)) return alert('Preencha os campos!');
+
+      const id = Date.now();
+      const nowIso = new Date().toISOString();
+      db.run(`INSERT INTO transactions VALUES (${id}, '${type}', '${desc}', ${val}, '${nowIso}')`);
+
+      closeModal('modal-expense');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function deleteTransaction(id) {
+      if (confirm('Excluir esta movimentação do histórico?')) {
+        db.run(`DELETE FROM transactions WHERE id = ${id}`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function renderProductExpenses() {
+      const total = productExpenses.reduce((acc, p) => acc + p.amount, 0);
+      document.getElementById('product-expense-total').innerText = isPrivate ? 'R$ ****,**' : `R$ ${total.toFixed(2)}`;
+
+      const tbody = document.getElementById('product-expense-table-body');
+      tbody.innerHTML = productExpenses.map(p => `
+        <tr>
+          <td>${p.date}</td>
+          <td>${p.name}</td>
+          <td>${p.qty}</td>
+          <td style="color:#f75a68; font-weight:bold;">${isPrivate ? 'R$ ****,**' : 'R$ ' + p.amount.toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function saveProductExpense() {
+      const name = document.getElementById('prod-exp-name').value.trim();
+      const qty = document.getElementById('prod-exp-qty').value.trim();
+      const val = parseFloat(document.getElementById('prod-exp-val').value);
+
+      if (!name || isNaN(val)) return alert('Preencha os dados da compra!');
+
+      const id = Date.now();
+      const dateStr = new Date().toLocaleDateString('pt-BR');
+      const nowIso = new Date().toISOString();
+
+      db.run(`INSERT INTO product_expenses VALUES (${id}, '${name}', '${qty}', ${val}, '${dateStr}')`);
+      db.run(`INSERT INTO transactions VALUES (${id + 1}, 'SAIDA', 'Insumo/Produto: ${name} (${qty})', ${val}, '${nowIso}')`);
+
+      closeModal('modal-product-expense');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function renderCharts() {
+      const startDate = document.getElementById('chart-start-date').value;
+      const endDate = document.getElementById('chart-end-date').value;
+
+      let filtered = transactions.filter(t => {
+        const tDate = t.date.split('T')[0];
+        if (startDate && tDate < startDate) return false;
+        if (endDate && tDate > endDate) return false;
+        return true;
+      });
+
+      const totalEntradas = isPrivate ? 0 : filtered.filter(t => t.type === 'ENTRADA').reduce((a, b) => a + b.amount, 0);
+      const totalSaidas = isPrivate ? 0 : filtered.filter(t => t.type === 'SAIDA').reduce((a, b) => a + b.amount, 0);
+
+      const ctx = document.getElementById('financialChart').getContext('2d');
+      if (financialChartInstance) financialChartInstance.destroy();
+
+      financialChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Entradas (Receitas)', 'Saídas (Despesas)'],
+          datasets: [{
+            label: 'Valor Total (R$)',
+            data: [totalEntradas, totalSaidas],
+            backgroundColor: ['#00b37e', '#f75a68']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Balanço Financeiro por Período', color: '#fff' }
+          },
+          scales: {
+            y: { ticks: { color: '#8d8d99' } },
+            x: { ticks: { color: '#8d8d99' } }
+          }
+        }
+      });
+    }
+
+    function resetChartDates() {
+      document.getElementById('chart-start-date').value = '';
+      document.getElementById('chart-end-date').value = '';
+      renderCharts();
+    }
+
+    function renderCatalog() {
+      const tbody = document.getElementById('catalog-table-body');
+      tbody.innerHTML = catalog.map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${p.unit}</td>
+          <td>${isPrivate ? 'R$ ****,**' : 'R$ ' + p.cost.toFixed(2)}</td>
+          <td>${isPrivate ? 'R$ ****,**' : 'R$ ' + p.price.toFixed(2)}</td>
+          <td class="action-btn">
+            <button class="btn btn-danger" style="font-size:0.7rem;" onclick="deleteProduct(${p.id})">🗑️ Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function saveProduct() {
+      const name = document.getElementById('prod-name').value.trim();
+      const unit = document.getElementById('prod-unit').value.trim();
+      const cost = parseFloat(document.getElementById('prod-cost').value) || 0;
+      const price = parseFloat(document.getElementById('prod-price').value) || 0;
+
+      if (!name) return alert('Digite o nome');
+
+      const id = Date.now();
+      db.run(`INSERT INTO catalog VALUES (${id}, '${name}', ${cost}, ${price}, '${unit}')`);
+
+      closeModal('modal-product');
+      loadDataFromDB();
+      renderAll();
+    }
+
+    function deleteProduct(id) {
+      if (confirm('Excluir este produto do catálogo?')) {
+        db.run(`DELETE FROM catalog WHERE id = ${id}`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function renderKPIs() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayT = transactions.filter(t => t.date.startsWith(today));
+
+      const entradasHoje = todayT.filter(t => t.type === 'ENTRADA').reduce((a,b) => a + b.amount, 0);
+      const saidasHoje = todayT.filter(t => t.type === 'SAIDA').reduce((a,b) => a + b.amount, 0);
+      const saldoHoje = entradasHoje - saidasHoje;
+
+      const totalEntradas = transactions.filter(t => t.type === 'ENTRADA').reduce((a,b) => a + b.amount, 0);
+      const totalSaidas = transactions.filter(t => t.type === 'SAIDA').reduce((a,b) => a + b.amount, 0);
+      const saldoGeral = totalEntradas - totalSaidas;
+
+      const apagar = bills.filter(b => b.type === 'PAGAR' && b.status === 'PENDENTE').reduce((a,b) => a + b.amount, 0);
+      const areceberContas = bills.filter(b => b.type === 'RECEBER' && b.status === 'PENDENTE').reduce((a,b) => a + b.amount, 0);
+      const areceberFila = customers.filter(c => c.status === 'AGUARDANDO_PAGAMENTO').reduce((a,b) => a + (b.total || 0), 0);
+      const areceberTotal = areceberContas + areceberFila;
+
+      document.getElementById('kpi-entradas').innerText = isPrivate ? 'R$ ****,**' : `R$ ${entradasHoje.toFixed(2)}`;
+      document.getElementById('kpi-saidas').innerText = isPrivate ? 'R$ ****,**' : `R$ ${saidasHoje.toFixed(2)}`;
+      document.getElementById('kpi-saldo-hoje').innerText = isPrivate ? 'R$ ****,**' : `R$ ${saldoHoje.toFixed(2)}`;
+      document.getElementById('kpi-saldo').innerText = isPrivate ? 'R$ ****,**' : `R$ ${saldoGeral.toFixed(2)}`;
+      document.getElementById('kpi-apagar').innerText = isPrivate ? 'R$ ****,**' : `R$ ${apagar.toFixed(2)}`;
+      document.getElementById('kpi-areceber').innerText = isPrivate ? 'R$ ****,**' : `R$ ${areceberTotal.toFixed(2)}`;
+    }
+
+    function markAsPaid(id) {
+      const c = customers.find(cust => cust.id === id);
+      if (c) {
+        db.run(`UPDATE customers SET status = 'PAGO' WHERE id = ${id}`);
+        const tId = Date.now();
+        const nowIso = new Date().toISOString();
+        db.run(`INSERT INTO transactions VALUES (${tId}, 'ENTRADA', 'Venda OS #${c.id} (${c.name})', ${c.total}, '${nowIso}')`);
+        loadDataFromDB();
+        renderAll();
+      }
+    }
+
+    function openTVWindow() { window.open('tv.html', '_blank'); }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function togglePrivacy() {
+      if (userMode === 'VISITOR') return;
+      isPrivate = !isPrivate;
+      document.getElementById('eye-text').innerText = isPrivate ? 'Mostrar Valores' : 'Ocultar Valores';
+      renderKPIs();
+      renderBills();
+      renderProductExpenses();
+      renderKanban();
+      renderCatalog();
+      renderHistory();
+    }
+  </script>
+</body>
+</html>
