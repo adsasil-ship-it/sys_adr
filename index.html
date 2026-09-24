@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestão Gráfica Pro - CRM & Atendimento</title>
+  <title>Adriano Designer Pro - CRM & Gestão Gráfica</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #0d0e12; color: #e1e1e6; display: flex; flex-direction: column; min-height: 100vh; }
 
     .header { background: #18191e; border-bottom: 1px solid #282930; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-    .brand-logo { width: 36px; height: 36px; background: #00b37e; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #121214; }
+    
+    /* LOGO SVG VETORIZADA EM BRANCO */
+    .brand-img { width: 55px; height: 55px; object-fit: contain; filter: invert(1) brightness(2); }
+
     .clock-time { font-size: 1.2rem; font-weight: bold; color: #00b37e; font-family: monospace; }
 
     .nav-tabs { background: #121318; border-bottom: 1px solid #282930; padding: 0 24px; display: flex; gap: 10px; }
@@ -64,13 +67,13 @@
 </head>
 <body>
 
-  <!-- TOP BAR -->
+  <!-- TOP BAR COM LOGO.SVG -->
   <header class="header">
-    <div style="display:flex; align-items:center; gap:12px;">
-      <div class="brand-logo">G</div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <img src="logo.svg" alt="Adriano Designer Pro" class="brand-img">
       <div>
-        <h1 style="font-size:1.1rem;">Gestão Gráfica Pro</h1>
-        <p style="font-size:0.75rem; color:#8d8d99;">Painel de Controle Completo</p>
+        <h1 style="font-size:1.15rem; color:#fff; font-weight:700; letter-spacing:0.5px;">Adriano Designer Pro</h1>
+        <p style="font-size:0.75rem; color:#8d8d99;">Sistema Integrado de Atendimento & Gestão Gráfica</p>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:15px;">
@@ -252,7 +255,7 @@
 
   </main>
 
-  <!-- MODAL NOVO CLIENTE -->
+  <!-- MODAIS -->
   <div class="modal-backdrop" id="modal-client">
     <div class="modal-box">
       <h3 id="modal-client-title">Novo Cliente</h3>
@@ -269,7 +272,6 @@
     </div>
   </div>
 
-  <!-- MODAL PROPOSTA -->
   <div class="modal-backdrop" id="modal-proposal">
     <div class="modal-box">
       <h3>Montar Proposta / OS</h3>
@@ -306,10 +308,9 @@
     </div>
   </div>
 
-  <!-- MODAL COMPROVANTE PERSONALIZADO PARA WHATSAPP -->
   <div class="modal-backdrop" id="modal-whatsapp-receipt">
     <div class="modal-box">
-      <h3>📲 Comprovante de Proposta do Cliente</h3>
+      <h3>📲 Comprovante Adriano Designer Pro</h3>
       <p style="color:#8d8d99; font-size:0.8rem; margin-bottom:12px;">Copie a mensagem abaixo e envie diretamente no WhatsApp do cliente:</p>
 
       <div class="whatsapp-preview-box" id="whatsapp-receipt-text"></div>
@@ -321,7 +322,6 @@
     </div>
   </div>
 
-  <!-- MODAL CONTA -->
   <div class="modal-backdrop" id="modal-bill">
     <div class="modal-box">
       <h3 id="modal-bill-title">Lançar Conta</h3>
@@ -358,7 +358,6 @@
     </div>
   </div>
 
-  <!-- MODAL EXTRATO -->
   <div class="modal-backdrop" id="modal-expense">
     <div class="modal-box">
       <h3 id="modal-hist-title">Lançar Saída Direta</h3>
@@ -379,7 +378,6 @@
     </div>
   </div>
 
-  <!-- MODAL CATÁLOGO -->
   <div class="modal-backdrop" id="modal-product">
     <div class="modal-box">
       <h3 id="modal-prod-title">Novo Produto/Serviço</h3>
@@ -601,7 +599,7 @@
       } else alert('Ninguém na fila.');
     }
 
-    /* MONTAGEM DA PROPOSTA & GERAÇÃO DE COMPROVANTE PERSONALIZADO */
+    /* MONTAGEM DA PROPOSTA */
     function openProposalModal() {
       const active = customers.find(c => c.status === 'EM_ANDAMENTO');
       if (!active) return;
@@ -675,10 +673,10 @@
       active.status = 'AGUARDANDO_PAGAMENTO';
       active.timerRunning = false;
 
-      // MONTAGEM DO COMPROVANTE FORMATADO PARA WHATSAPP
-      let receiptText = `*📄 RESUMO DO PEDIDO - ORDEM DE SERVIÇO*\n`;
+      // COMPROVANTE ADRIANO DESIGNER PRO
+      let receiptText = `*🎨 ADRIANO DESIGNER PRO - ORDEM DE SERVIÇO*\n`;
       receiptText += `*Cliente:* ${active.name}\n`;
-      receiptText += `*Atendimento:* ${active.type}\n`;
+      receiptText += `*Serviço:* ${active.type}\n`;
       receiptText += `------------------------------------\n`;
       receiptText += `*ITENS SOLICITADOS:*\n`;
 
@@ -710,11 +708,11 @@
     function copyWhatsAppReceipt() {
       const text = document.getElementById('whatsapp-receipt-text').innerText;
       navigator.clipboard.writeText(text);
-      alert('Comprovante copiado! Cole no WhatsApp do cliente.');
+      alert('Comprovante copiado com sucesso!');
       closeModal('modal-whatsapp-receipt');
     }
 
-    /* GERENCIADOR DE PARCELAS NO CADASTRO DE CONTAS */
+    /* GERENCIADOR DE PARCELAS */
     function toggleInstallmentField() {
       const chk = document.getElementById('chk-has-installments').checked;
       document.getElementById('installment-box').style.display = chk ? 'block' : 'none';
